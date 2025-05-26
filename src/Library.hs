@@ -25,7 +25,7 @@ data Auto = Auto {
     velocidadMaxima :: VelocidadMaxima,
     tiempoCarrera :: TiempoCarrera,
     apodos :: [Apodo]
-} deriving Show
+} deriving (Eq,Show)
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -74,6 +74,76 @@ auto4 = Auto {
     tiempoCarrera = 0,
     apodos = ["El rey del desierto"]
 }
+
+
+
+--agregado de autos para los test de pistas finales
+ferrari :: Auto
+ferrari = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 60,
+    tiempoCarrera = 0,
+    apodos = ["La nave", "El fierro", "Ferrucho"]
+}
+
+peugeot :: Auto
+peugeot = Auto {
+    marca = "Peugeot",
+    modelo = "504",
+    desgasteRuedas = 79,
+    desgasteChasis = 0,
+    velocidadMaxima = 40,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+--
+
+-- agrego autos en perfecto estado para test finales
+
+competidor1 :: Auto
+competidor1 = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 270,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+competidor2 :: Auto
+competidor2 = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 90,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+competidor3 :: Auto
+competidor3 = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 124,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+competidor4 :: Auto
+competidor4 = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 79,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -239,7 +309,7 @@ data Seccion = Curva {
     cambiosDeDireccion :: CambiosDeDireccion
 }| Rulo {
     diametro :: Diametro
-} deriving Show
+} deriving (Eq,Show)
 
 --Defino algunas curvas
 
@@ -292,7 +362,7 @@ data Pista = Pista {
     pais :: String,
     precio :: Numero,
     secciones :: [Seccion]
-} deriving Show
+} deriving (Show, Eq)
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -725,7 +795,7 @@ Justificar conceptualmente en cada caso.
 
 
 -- re hago las funciones de pasar por tramos para no alterar las originales del tp1 
-
+{-
 desgastePorTramo2 :: Auto -> Seccion -> Auto
 desgastePorTramo2 auto (Curva angulo longitud) = auto {
     desgasteRuedas = desgasteRuedas auto + 3 * longitud / angulo,
@@ -744,6 +814,26 @@ desgastePorTramo2 auto (Rulo diametro) = auto {
     desgasteRuedas = desgasteRuedas auto + diametro * 1.5,
     tiempoCarrera = tiempoCarrera auto + 5 * diametro / velocidadMaxima auto
 }
+-}
+desgastePorTramo2 :: Auto -> Seccion -> Auto
+desgastePorTramo2 auto (Curva angulo longitud) = auto {
+    desgasteRuedas = desgasteRuedas auto + 3 * longitud / angulo,
+    tiempoCarrera = tiempoCarrera auto + longitud / (velocidadMaxima auto / 2)
+}
+desgastePorTramo2 auto (Recta longitud) = auto {
+    desgasteChasis = desgasteChasis auto + longitud * (1/100),
+    tiempoCarrera = tiempoCarrera auto + longitud / velocidadMaxima auto
+}
+desgastePorTramo2 auto (Zigzag cambiosDeDireccion) = auto {
+    desgasteChasis = desgasteChasis auto + 5, 
+    desgasteRuedas = desgasteRuedas auto + velocidadMaxima auto * cambiosDeDireccion / 10,
+    tiempoCarrera = tiempoCarrera auto + cambiosDeDireccion * 3
+}
+desgastePorTramo2 auto (Rulo diametro) = auto {
+    desgasteRuedas = desgasteRuedas auto + diametro * 1.5,
+    tiempoCarrera = tiempoCarrera auto + 5 * diametro / velocidadMaxima auto
+}
+
 
 
 -- PUNTO A
@@ -768,23 +858,34 @@ paradaEnBoxes auto = auto {tiempoCarrera = tiempoCarrera auto + 10}
 type Modificador = Auto -> Seccion -> Auto
 
 data TramoModificado = TramoModificado Seccion [Modificador]
+    deriving (Show, Eq)
 
 aplicarTramoModificado :: Auto -> TramoModificado -> Auto
 aplicarTramoModificado auto (TramoModificado seccion modificadores) =
-    foldl (\a m -> m a seccion) (desgastePorTramo2 auto seccion) modificadores
-
-
+    foldl (\a m -> m auto seccion) (desgastePorTramo2 auto seccion) modificadores
+{-
 modBoxes :: Modificador
 modBoxes auto seccion
     | not (buenEstadoSalud auto) = (paradaEnBoxes . repararAuto) auto
     | otherwise = auto
+-}
+
+modBoxes :: Modificador
+modBoxes auto seccion
+    | not (buenEstadoSalud auto) = 
+        auto{
+            tiempoCarrera = tiempoCarrera auto + 10,
+            desgasteChasis = desgasteChasis auto * 0.15,
+            desgasteRuedas = 0
+        }
+    | otherwise = auto
+
 
 
 modMojado :: Modificador
 modMojado auto seccion = auto {
     tiempoCarrera = tiempoCarrera auto + (tiempoCarrera (desgastePorTramo2 auto seccion) - tiempoCarrera auto) * 0.5
 }
-
 
 
 modRipio :: Modificador
@@ -795,12 +896,14 @@ modRipio auto seccion = auto {
 }
 
 
+
 modObstruccion :: Numero -> Modificador
 modObstruccion metros auto _ = auto {
     desgasteRuedas = desgasteRuedas auto + metros * 2
 }
 
 
+{-
 modTurbo :: Modificador
 modTurbo auto seccion =
     restaurarVelocidad (desgastePorTramo2 (duplicarVelocidad auto) seccion) auto
@@ -811,6 +914,748 @@ duplicarVelocidad auto = auto { velocidadMaxima = velocidadMaxima auto * 2 }
 restaurarVelocidad :: Auto -> Auto -> Auto
 restaurarVelocidad autoActualizado autoOriginal =
     autoActualizado { velocidadMaxima = velocidadMaxima autoOriginal }
+-}
+
+
+
+duplicarVelocidad :: Auto -> Auto
+duplicarVelocidad auto = auto { velocidadMaxima = velocidadMaxima auto * 2 }
+
+impactoTramo :: Auto -> Seccion -> Auto
+impactoTramo auto seccion =
+    desgastePorTramo2 (auto {desgasteChasis = 0, desgasteRuedas = 0, tiempoCarrera = 0}) seccion
+
+
+modTurbo :: Modificador
+modTurbo auto seccion =
+    -- Calcula el tiempo que el tramo agregaría normalmente si el auto comenzara con tiempoCarrera 0.
+    ( \tiempoAgregadoNormal ->
+        -- Calcula el tiempo que el tramo agregaría con el turbo si el auto comenzara con tiempoCarrera 0 y velocidad duplicada.
+        ( \tiempoAgregadoTurbo ->
+            -- Aplica el cambio de tiempo: (tiempo actual del auto) - tiempoAgregadoNormal + tiempoAgregadoTurbo
+            -- Y restaura la velocidad máxima del auto a la que tenía originalmente.
+            auto {
+                tiempoCarrera = (tiempoCarrera auto) - tiempoAgregadoNormal + tiempoAgregadoTurbo,
+                velocidadMaxima = velocidadMaxima auto -- Asegura que la velocidad máxima sea la original al final del tramo
+            }
+        ) (tiempoCarrera (impactoTramo (duplicarVelocidad (auto { tiempoCarrera = 0, desgasteChasis = desgasteChasis auto, desgasteRuedas = desgasteRuedas auto })) seccion))
+    ) (tiempoCarrera (impactoTramo (auto { tiempoCarrera = 0, desgasteChasis = desgasteChasis auto, desgasteRuedas = desgasteRuedas auto }) seccion))
+
+
+
+
+
+
+
+
+
+-- 5
+{-
+Realizar la función que haga pasarPorTramo/2 que, dado un tramo y un auto, 
+hace que el auto atraviese el tramo, siempre y cuando no pase que no da más 
+al inicio del tramo. 
+Si el escenario es que no da más, entonces el auto no recibe ningún efecto, 
+ya que no pasa por el tramo.
+
+-}
+
+
+
+pasarPorTramo2 :: Auto -> TramoModificado -> Auto
+pasarPorTramo2 auto tramo
+    | buenEstadoSalud auto = aplicarTramoModificado auto tramo
+    | otherwise = auto
+
+
+
+
+
+
+
+
+
+
+
+
+-- 6
+
+{-
+Atravesando pistas 
+Crear la vueltaALaManzana. Es una pista que se llama “La manzana”, 
+en “Italia”, con un precio de $30 y con:
+
+tramo recto de 130m, 
+curva de 13m de 90°,
+tramo recto de 130m, 
+curva de 13m de 90°,
+tramo recto de 130m, 
+curva de 13m de 90°,
+tramo recto de 130m, 
+curva de 13m de 90°.
+
+-}
+data Pista2 = Pista2 {
+    nombre2 :: String,
+    pais2 :: String,
+    precio2 :: Numero,
+    secciones2 :: [TramoModificado]
+} deriving (Show, Eq)
+
+
+
+-- PUNTO A
+vueltaALaManzana :: Pista2
+vueltaALaManzana = Pista2{
+    nombre2 = "La manzana",
+    pais2 = "Italia",
+    precio2 = 30,
+    secciones2 = [
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) [], 
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) [], 
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) [], 
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) []
+        
+    ]
+}
+
+
+
+-- PUNTO B
+
+{-
+Crear la superPista, en “Argentina”, con precio de $300 y con los siguientes tramos:
+-   tramoRectoClassic
+-   curvaTranca
+-   2 tramitos consecutivos, pero el segundo está mojado y el primero con turbo
+-   Rulo en el aire de 10m
+-   Curva con ángulo de 80º, longitud 400m; con obstrucción de 2m
+-   Curva con ángulo de 115º, longitud 650m
+-   Tramo recto de 970m
+-   curvaPeligrosa
+-   tramito con ripio
+-   Boxes con un Tramo Recto de 800m
+-   casiCurva con una obstrucción de 5m
+-   Tramo zig zag de 2 cambios
+-   deseoDeMuerte, mojado y de ripio (“¿Cómo que de ripio? Si es un rulo... ¡se caen las piedras!”... Sí, nosotros nos preguntamos lo mismo)
+-   ruloClasico
+-   zigZagLoco
+-}
+
+{-
+data Seccion = Curva {
+    angulo :: Angulo,
+    longitud :: Longitud
+}| Recta {
+    longitud :: Longitud
+}| Zigzag {
+    cambiosDeDireccion :: CambiosDeDireccion
+}| Rulo {
+    diametro :: Diametro
+} deriving (Eq,Show)
+-}
+
+
+
+
+tramoRectoClassic :: TramoModificado
+tramoRectoClassic = TramoModificado (Recta 100) [modBoxes] 
+
+curvaTrancaModificado :: TramoModificado
+curvaTrancaModificado = TramoModificado curvaTranca []
+
+superPista :: Pista2
+superPista = Pista2{
+    nombre2 = "La manzana",
+    pais2 = "Argentina",
+    precio2 = 300,
+    secciones2 = [
+        tramoRectoClassic, 
+        curvaTrancaModificado,
+        TramoModificado tramito [modTurbo],
+        TramoModificado tramito [modMojado],
+        TramoModificado (Rulo 10) [],
+        TramoModificado (Curva 80 400) [modObstruccion 2],
+        TramoModificado (Curva 115 400) [],
+        TramoModificado (Recta 970) [],
+        TramoModificado curvaPeligrosa [],
+        TramoModificado tramito [modRipio],
+        TramoModificado (Recta 800) [modBoxes],
+        TramoModificado casiCurva [modObstruccion 5],
+        TramoModificado (Zigzag 2) [],
+        TramoModificado deseoDeMuerte [modMojado, modRipio],
+        TramoModificado ruloClasico [],
+        TramoModificado zigzagLoco []
+    ]
+}
+
+
+
+
+-- PUNTO C
+{-
+Hacer la función peganLaVuelta/2 que dada una pista y una lista de autos, 
+hace que todos los autos den la vuelta (es decir, que avancen por todos los tramos), 
+teniendo en cuenta que un auto que no da más “deja de avanzar”.
+-}
+
+peganLaVuelta :: Pista2 -> [Auto] -> [Auto]
+peganLaVuelta pista autos = map (flip correrPista (secciones2 pista)) autos
+
+correrPista :: Auto -> [TramoModificado] -> Auto
+correrPista auto tramos = foldl pasarPorTramo2 auto tramos
+
+
+
+
+
+
+-- 7 ¡Y llegaron las carreras!!
+
+
+-- PUNTO A
+
+-- Modelar una carrera que está dada por una pista y un número de vueltas.
+
+data Carrera = Carrera{
+    pista :: Pista2,
+    vueltas :: Numero
+} deriving (Show, Eq)
+
+
+
+-- PUNTO B
+{-
+Representar el tourBuenosAires, 
+una carrera que se realiza en la superPista y tiene 20 vueltas.
+-}
+
+tourBuenosAires :: Carrera
+tourBuenosAires = Carrera{
+    pista = superPista,
+    vueltas = 20
+}
+
+
+
+-- PUNTO C
+
+{-
+Hacer que un conjunto de autos juegue una carrera, 
+obteniendo los resultados parciales de cada vuelta, 
+y la eliminación de los autos que no dan más en cada vuelta.
+
+La forma de modelar/representar la respuesta queda a criterio del grupo, 
+pero debe poder responder lo siguiente:
+
+-   El auto ganador luego de todas las vueltas de la carrera.
+-   El tiempo total del segundo.
+-   El tiempo parcial tras 2 vueltas del primer auto.
+-   Cantidad de autos que terminaron la carrera.
+
+Se puede usar esta función, que dada una función de valoración y una lista, 
+retorna esa lista ordenada en forma ascendente según los resultados de 
+aplicar esa función a cada elemento:
+
+quickSortBy :: Ord b => (a -> b) -> [a] -> [a]
+quickSortBy _ [] = []
+quickSortBy valoracion (x:xs) = anteriores ++ [x] ++ posteriores    
+    where
+        anteriores  = quickSortBy valoracion $ filter ((< valoracion x).valoracion)  xs
+        posteriores = quickSortBy valoracion $ filter ((>= valoracion x).valoracion) xs
+
+Ejemplo de uso:
+> quickSortBy abs [4, -2, 1]
+[1, -2, 4]
+
+-}
+
+-- funcion que nos dejan usar 😃
+quickSortBy :: Ord b => (a -> b) -> [a] -> [a]
+quickSortBy _ [] = []
+quickSortBy valoracion (x:xs) = anteriores ++ [x] ++ posteriores    
+    where
+        anteriores  = quickSortBy valoracion $ filter ((< valoracion x).valoracion)  xs
+        posteriores = quickSortBy valoracion $ filter ((>= valoracion x).valoracion) xs
+
+
+
+{-
+data ResultadoVuelta = ResultadoVuelta {
+    nroDeVuelta :: Numero,
+    autosDespuesDeVuelta :: [Auto]
+}
+
+data ResultadoCarrera = ResultadoCarrera {
+    resultadosVueltas :: [ResultadoVuelta]
+}
+
+
+--peganLaVuelta :: Pista2 -> [Auto] -> [Auto]
+
+correrCarrera :: Pista2 -> Numero -> [Auto] -> [ResultadoCarrera]
+correrCarrera _ 0 autos = autos -- caso base
+correrCarrera pista vueltasFaltantes autos = correrCarrera pista (vueltasFaltantes - 1) (peganLaVuelta pista autos) 
+-}
+
+
+
+{-
+-- desde aca
+
+
+data ResultadoVuelta = ResultadoVuelta {
+    nroDeVuelta :: Numero,
+    autosRestantes :: [Auto],
+    autosEliminados :: [Auto]
+} deriving Show
+
+data ResultadoCarrera = ResultadoCarrera {
+    resultadosVueltas :: [ResultadoVuelta]
+} deriving Show
+
+
+{-
+simularCarrera :: Carrera -> [Auto] -> ResultadoCarrera
+simularCarrera carrera autos = ResultadoCarrera (simularVueltas (vueltas carrera) (pista carrera) autos 1)
+-}
+simularCarrera :: Carrera -> [Auto] -> ResultadoCarrera
+simularCarrera carrera autos =
+  ResultadoCarrera (simularVueltas (vueltas carrera) (pista carrera) autos 1)
+
+
+{-
+simularVueltas :: Numero -> Pista2 -> [Auto] -> Numero -> [ResultadoVuelta]
+simularVueltas 0 _ autos _ = []
+simularVueltas _ _ [] _ = []
+simularVueltas n pista autos turno =
+  construirResultadoVuelta pista autos turno :
+  simularVueltas (n - 1) pista (filtrarAutosQueSiguen (darUnaVuelta pista autos)) (turno + 1)
+-}
+simularVueltas :: Numero -> Pista2 -> [Auto] -> Numero -> [ResultadoVuelta]
+simularVueltas 0 _ _ _ = []
+simularVueltas _ _ [] _ = []
+simularVueltas n pista autos turno =
+  consVuelta pista autos turno n
+
+{-
+consVuelta :: Pista2 -> [Auto] -> Numero -> Numero -> [ResultadoVuelta]
+consVuelta pista autos turno vueltasRestantes =
+  construirResultadoVuelta pista autos turno :
+  simularVueltas (vueltasRestantes - 1) pista (filtrarAutosQueSiguen (darUnaVuelta pista autos)) (turno + 1)
+-}
+
+consVuelta :: Pista2 -> [Auto] -> Numero -> Numero -> [ResultadoVuelta]
+consVuelta pista autos turno vueltasRestantes =
+  resultadoDesdeVuelta pista autos turno :
+  simularVueltas (vueltasRestantes - 1) pista (autosQueSiguenEnVuelta pista autos) (turno + 1)
+
+
+resultadoDesdeVuelta pista autos turno =
+  ResultadoVuelta turno (filtrarAutosQueSiguen (darUnaVuelta pista autos)) (filtrarAutosQueNoDanMas (darUnaVuelta pista autos))
+
+
+
+autosQueSiguenEnVuelta :: Pista2 -> [Auto] -> [Auto]
+autosQueSiguenEnVuelta pista autos = filtrarAutosQueSiguen (darUnaVuelta pista autos)
+
+
+{-
+construirResultadoVuelta :: Pista2 -> [Auto] -> Numero -> ResultadoVuelta
+construirResultadoVuelta pista autos turno = ResultadoVuelta turno autosQueSiguen autosEliminados
+  where
+    autosTrasVuelta = darUnaVuelta pista autos
+    autosQueSiguen = filtrarAutosQueSiguen autosTrasVuelta
+    autosEliminados = filtrarAutosQueNoDanMas autosTrasVuelta
+-}
+{-
+construirResultadoVuelta :: Pista2 -> [Auto] -> Numero -> ResultadoVuelta
+construirResultadoVuelta pista autos turno =
+  resultadoDesdeAutosYTurno (darUnaVuelta pista autos) turno
+-}
+construirResultadoVuelta :: Pista2 -> [Auto] -> Numero -> ResultadoVuelta
+construirResultadoVuelta pista autos turno =
+  resultadoDesdeAutosYTurno (darUnaVuelta pista autos) turno
+
+{-
+resultadoDesdeAutosYTurno :: [Auto] -> Numero -> ResultadoVuelta
+resultadoDesdeAutosYTurno autos turno =
+  ResultadoVuelta turno (filtrarAutosQueSiguen autos) (filtrarAutosQueNoDanMas autos)
+-}
+resultadoDesdeAutosYTurno :: [Auto] -> Numero -> ResultadoVuelta
+resultadoDesdeAutosYTurno autos turno =
+  ResultadoVuelta turno (filtrarAutosQueSiguen autos) (filtrarAutosQueNoDanMas autos)
+
+
+darUnaVuelta :: Pista2 -> [Auto] -> [Auto]
+darUnaVuelta pista = map (flip correrPista (secciones2 pista))
+
+
+
+filtrarAutosQueSiguen :: [Auto] -> [Auto]
+filtrarAutosQueSiguen = filter daParaSeguir
+
+filtrarAutosQueNoDanMas :: [Auto] -> [Auto]
+filtrarAutosQueNoDanMas = filter (not . daParaSeguir)
+
+daParaSeguir :: Auto -> Bool
+daParaSeguir auto = noDaParaMas auto /= "No da mas"
+
+
+carrerita :: Carrera
+carrerita = Carrera{
+    pista = superPista,
+    vueltas = 3
+}
+
+-- hasta aca
+-}
+
+
+-- simularCarrera carreraEjemplo [auto1, auto2, auto3]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+carrerita :: Carrera
+carrerita = Carrera{
+    pista = superPista2,
+    vueltas = 2
+}
+
+
+
+
+
+
+type CantidadVueltasTotales = Number
+type NumeroDeVuelta = Number
+type Tiempo = Number
+type Posicion = Number
+
+
+-- Tipos para resultados
+data ResultadoVuelta = ResultadoVuelta {
+    nroDeVuelta :: NumeroDeVuelta,
+    autosRestantes :: [Auto],
+    autosEliminados :: [Auto]
+} deriving Show
+
+data ResultadoCarrera = ResultadoCarrera {
+    resultadosVueltas :: [ResultadoVuelta]
+} deriving Show
+
+-- Simula una carrera completa
+simularCarrera :: Carrera -> [Auto] -> ResultadoCarrera
+simularCarrera carrera autos =
+  ResultadoCarrera (simularVueltas (vueltas carrera) (pista carrera) autos 1)
+
+-- Simula las vueltas restantes
+simularVueltas :: CantidadVueltasTotales -> Pista2 -> [Auto] -> NumeroDeVuelta -> [ResultadoVuelta]
+simularVueltas 0 _ _ _ = []
+simularVueltas _ _ [] _ = []
+simularVueltas vueltasRestantes pista autos turno =
+  consVuelta pista autos turno vueltasRestantes
+
+-- Construye el resultado de una vuelta y continúa
+consVuelta :: Pista2 -> [Auto] -> NumeroDeVuelta -> CantidadVueltasTotales -> [ResultadoVuelta]
+consVuelta pista autos turno vueltasRestantes =
+  resultadoDesdeVuelta pista autos turno :
+  simularVueltas (vueltasRestantes - 1) pista (autosQueSiguenEnVuelta pista autos) (turno + 1)
+
+-- Aplica los efectos de una vuelta y construye el resultado
+resultadoDesdeVuelta pista autos turno =
+  ResultadoVuelta turno (filtrarAutosQueSiguen (darUnaVuelta pista autos)) (filtrarAutosQueNoDanMas (darUnaVuelta pista autos))
+
+-- Calcula autos que siguen después de una vuelta
+autosQueSiguenEnVuelta :: Pista2 -> [Auto] -> [Auto]
+autosQueSiguenEnVuelta pista autos = filtrarAutosQueSiguen (darUnaVuelta pista autos)
+
+-- Aplica una vuelta completa a todos los autos
+darUnaVuelta :: Pista2 -> [Auto] -> [Auto]
+darUnaVuelta pista = map (flip correrPista (secciones2 pista))
+
+-- Filtros
+filtrarAutosQueSiguen :: [Auto] -> [Auto]
+filtrarAutosQueSiguen = filter daParaSeguir
+
+filtrarAutosQueNoDanMas :: [Auto] -> [Auto]
+filtrarAutosQueNoDanMas = filter (not . daParaSeguir)
+
+daParaSeguir :: Auto -> Bool
+daParaSeguir auto = buenEstadoSalud auto 
+
+
+
+
+
+
+
+
+-----
+--cosas a testaer
+
+vueltaALaManzana2 :: Pista2
+vueltaALaManzana2 = Pista2{
+    nombre2 = "La manzana",
+    pais2 = "Italia",
+    precio2 = 30,
+    secciones2 = [
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) [], 
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) [], 
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) [], 
+        TramoModificado (Recta 130) [], 
+        TramoModificado (Curva 90 13) []
+        
+    ]
+}
+
+
+competidor6 :: Auto
+competidor6 = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 20,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+
+
+competidor7 :: Auto
+competidor7 = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 100,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+
+
+
+competidor8 :: Auto
+competidor8 = Auto {
+    marca = "Ferrari",
+    modelo = "F50",
+    desgasteRuedas = 0,
+    desgasteChasis = 0,
+    velocidadMaxima = 65,
+    tiempoCarrera = 0,
+    apodos = ["El rey del desierto"]
+}
+
+
+
+
+-----
+
+
+
+
+
+{-
+peganLaVuelta vueltaALaManzana [competidor6, competidor7, competidor8]
+[ Auto
+    { marca = "Ferrari"
+    , modelo = "F50"
+    , desgaste_ruedas = 1.7333333333333333
+    , desgaste_chasis = 5.2
+    , velocidad_maxima = 270
+    , unidad_velocidad = ""
+    , tiempo_de_carrera = 2.3111111111111111
+    , apodos = [ "El rey del desierto" ]
+    }
+, Auto
+    { marca = "Ferrari"
+    , modelo = "F50"
+    , desgaste_ruedas = 1.7333333333333333
+    , desgaste_chasis = 5.2
+    , velocidad_maxima = 100
+    , unidad_velocidad = ""
+    , tiempo_de_carrera = 6.24
+    , apodos = [ "El rey del desierto" ]
+    }
+, Auto
+    { marca = "Ferrari"
+    , modelo = "F50"
+    , desgaste_ruedas = 1.7333333333333333
+    , desgaste_chasis = 5.2
+    , velocidad_maxima = 65
+    , unidad_velocidad = ""
+    , tiempo_de_carrera = 9.6
+    , apodos = [ "El rey del desierto" ]
+    }
+]
+
+-}
+
+
+
+
+
+superPista2 :: Pista2
+superPista2 = Pista2{
+    nombre2 = "La manzana",
+    pais2 = "Argentina",
+    precio2 = 300,
+    secciones2 = [
+        tramoRectoClassic, 
+        curvaTrancaModificado,
+--        TramoModificado tramito [modTurbo],
+--        TramoModificado tramito [modMojado],
+        TramoModificado (Rulo 10) [modBoxes]
+--        TramoModificado (Curva 80 400) [modObstruccion 2],
+--        TramoModificado (Curva 115 400) [],
+--        TramoModificado (Recta 970) [],
+--        TramoModificado curvaPeligrosa [],
+--        TramoModificado tramito [modRipio],
+--        TramoModificado (Recta 800) [modBoxes]
+--        TramoModificado casiCurva [modObstruccion 5],
+--        TramoModificado (Zigzag 2) [modBoxes]
+--        TramoModificado deseoDeMuerte [modMojado, modRipio],
+--        TramoModificado ruloClasico [],
+--        TramoModificado zigzagLoco [modBoxes]
+    ]
+}
+
+
+
+superPista3 :: Pista2
+superPista3 = Pista2{
+    nombre2 = "La manzana",
+    pais2 = "Argentina",
+    precio2 = 300,
+    secciones2 = [
+        TramoModificado tramito [modTurbo],
+        TramoModificado tramito [modMojado],
+        TramoModificado (Rulo 10) [],
+        TramoModificado (Curva 80 400) [modObstruccion 2],
+        TramoModificado deseoDeMuerte [modMojado, modRipio],
+        TramoModificado (Recta 800) [],
+        TramoModificado deseoDeMuerte [modMojado, modRipio,modBoxes],
+        TramoModificado (Recta 800) []
+    ]
+}
+
+
+
+
+
+--(simularCarrera carrerita [competidor6, competidor7, competidor8])
+
+-- mostrar resultados pedidos de la carrera
+{-
+El auto ganador luego de todas las vueltas de la carrera.
+El tiempo total del segundo.
+El tiempo parcial tras 2 vueltas del primer auto.
+Cantidad de autos que terminaron la carrera.
+-}
+
+
+
+
+
+
+type Puesto = Numero
+type Vuelta = Numero
+
+
+
+
+
+-- El auto ganador luego de todas las vueltas de la carrera.
+
+ultimaVueltaCarrera :: ResultadoCarrera -> ResultadoVuelta
+ultimaVueltaCarrera = head . reverse . resultadosVueltas
+
+
+autoEnPosicion :: Puesto -> ResultadoCarrera -> Auto
+autoEnPosicion posicion resultadoCarrera =
+    (quickSortBy tiempoCarrera (autosRestantes (ultimaVueltaCarrera resultadoCarrera))) !! (posicion - 1)
+
+buscarGanador :: ResultadoCarrera -> Auto
+buscarGanador resultadpCarrera = autoEnPosicion 1 resultadpCarrera
+
+
+--buscarGanador (simularCarrera carrerita [competidor6, competidor7, competidor8])
+
+
+
+
+
+-- El tiempo total del segundo.
+
+tiempoTotalPuesto :: Puesto -> ResultadoCarrera -> TiempoCarrera
+tiempoTotalPuesto puesto resultadoCarrera = tiempoCarrera  (autoEnPosicion puesto resultadoCarrera) 
+
+-- tiempoTotalPuesto 2 (simularCarrera carrerita [competidor6, competidor7, competidor8])
+
+
+
+
+
+
+
+--El tiempo parcial tras 2 vueltas del primer auto.
+
+buscarVueltaEnCarrera :: Vuelta -> ResultadoCarrera -> ResultadoVuelta
+buscarVueltaEnCarrera vuelta resultadoCarrera = resultadosVueltas resultadoCarrera !! (vuelta - 1) 
+
+-- tiempoTotalPuesto 1 (buscarVueltaEnCarrera 2 (simularCarrera carrerita [competidor6, competidor7, competidor8]))
+
+
+
+
+
+
+
+--Cantidad de autos que terminaron la carrera.
+
+--length (autosRestantes (ultimaVueltaCarrera (simularCarrera carrerita [competidor6, competidor7, competidor8])))
+
+
+
+
+-- FUNCION MOSTRAR RESULTADOS SOLICITADOS
+--mostrarResultadosCarrera :: ResultadoCarrera
+mostrarResultadosCarrera :: ResultadoCarrera -> String
+mostrarResultadosCarrera resultadoCarrera =
+    "--- Resultados de la Carrera ---\n" ++
+    "Ganador: " ++ show (buscarGanador resultadoCarrera) ++ "\n" ++
+    "Tiempo del Segundo: " ++ show (tiempoTotalPuesto 2 resultadoCarrera) ++ "\n" ++
+    "Tiempo del Ganador en Vuelta 2: " ++ show (tiempoCarrera (head (autosRestantes (buscarVueltaEnCarrera 2 resultadoCarrera)))) ++ "\n" ++
+    "Cantidad de autos que terminaron: " ++ show(length (autosRestantes (ultimaVueltaCarrera resultadoCarrera)))++ "\n" ++
+    "--------------------------------"
+
+
+-- mostrarResultadosCarrera (simularCarrera carrerita [competidor6, competidor7, competidor8])
+
+
+
+-- PUNTO FINAL
+
 
 
 
